@@ -290,6 +290,42 @@ extension Descriptor {
 }
 
 extension FieldDescriptor {
+    /// Field number for the uuid custom option (from tolki/options.proto)
+    private static let uuidOptionFieldNumber = 50001
+
+    /// Returns true if this bytes field has the uuid option set.
+    /// Checks for `[(uuid) = "v4"]` or similar in field options.
+    var hasUuidOption: Bool {
+        guard type == .bytes else { return false }
+
+        // Method 1: Check extension field values (when option is properly parsed)
+        if options._protobuf_extensionFieldValues[Self.uuidOptionFieldNumber] != nil {
+            return true
+        }
+
+        // Method 2: Check uninterpreted_option (when extension isn't registered)
+        for opt in options.uninterpretedOption {
+            for namePart in opt.name {
+                if namePart.namePart == "uuid" {
+                    return true
+                }
+            }
+        }
+
+        // Method 3: Check unknown fields for field number 50001
+        // When buf parses but doesn't decode the extension, it ends up in unknown fields.
+        // Field 50001 with wire type 2 (string) = tag 400010 = varint 0x8A 0xB5 0x18
+        let unknownData = options.unknownFields.data
+        if unknownData.count >= 3 &&
+           unknownData[0] == 0x8A &&
+           unknownData[1] == 0xB5 &&
+           unknownData[2] == 0x18 {
+            return true
+        }
+
+        return false
+    }
+
     func swiftType(namer: SwiftProtobufNamer) -> String {
         if case (let keyField, let valueField)? = messageType?.mapKeyAndValue {
             let keyType = keyField.swiftType(namer: namer)
@@ -310,7 +346,12 @@ extension FieldDescriptor {
         case .string: result = "String"
         case .group: result = namer.fullName(message: messageType!)
         case .message: result = namer.fullName(message: messageType!)
-        case .bytes: result = "Data"
+        case .bytes:
+            if hasUuidOption {
+                result = "UUID"
+            } else {
+                result = "Data"
+            }
         case .uint32: result = "UInt32"
         case .enum: result = namer.fullName(enum: enumType!)
         case .sfixed32: result = "Int32"
@@ -406,7 +447,11 @@ extension FieldDescriptor {
         switch type {
         case .bool: return "false"
         case .string: return "String()"
-        case .bytes: return "Data()"
+        case .bytes:
+            if hasUuidOption {
+                return "UUID()"
+            }
+            return "Data()"
         case .group, .message:
             return namer.fullName(message: messageType!) + "()"
         case .enum:
@@ -442,7 +487,11 @@ extension FieldDescriptor {
         case .bool: return "\(namer.swiftProtobufModulePrefix)ProtobufBool"
         case .string: return "\(namer.swiftProtobufModulePrefix)ProtobufString"
         case .group, .message: return namer.fullName(message: messageType!)
-        case .bytes: return "\(namer.swiftProtobufModulePrefix)ProtobufBytes"
+        case .bytes:
+            if hasUuidOption {
+                return "\(namer.swiftProtobufModulePrefix)ProtobufUUID"
+            }
+            return "\(namer.swiftProtobufModulePrefix)ProtobufBytes"
         case .uint32: return "\(namer.swiftProtobufModulePrefix)ProtobufUInt32"
         case .enum: return namer.fullName(enum: enumType!)
         case .sfixed32: return "\(namer.swiftProtobufModulePrefix)ProtobufSFixed32"

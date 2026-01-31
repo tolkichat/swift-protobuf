@@ -432,3 +432,49 @@ public struct ProtobufBytes: FieldType, MapValueType {
         assert(false)
     }
 }
+
+///
+/// UUID - 16 bytes stored as UUID type
+///
+public struct ProtobufUUID: FieldType, MapValueType {
+    public typealias BaseType = UUID
+    public static var proto3DefaultValue: UUID { UUID(uuid: (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)) }
+
+    public static func decodeSingular<D: Decoder>(value: inout BaseType?, from decoder: inout D) throws {
+        var data: Data?
+        try decoder.decodeSingularBytesField(value: &data)
+        if let data = data, data.count == 16 {
+            value = data.withUnsafeBytes { ptr in
+                UUID(uuid: ptr.load(as: uuid_t.self))
+            }
+        }
+    }
+
+    public static func decodeRepeated<D: Decoder>(value: inout [BaseType], from decoder: inout D) throws {
+        var data: Data?
+        try decoder.decodeSingularBytesField(value: &data)
+        if let data = data, data.count == 16 {
+            let uuid = data.withUnsafeBytes { ptr in
+                UUID(uuid: ptr.load(as: uuid_t.self))
+            }
+            value.append(uuid)
+        }
+    }
+
+    public static func visitSingular<V: Visitor>(value: BaseType, fieldNumber: Int, with visitor: inout V) throws {
+        let data = withUnsafeBytes(of: value.uuid) { Data($0) }
+        try visitor.visitSingularBytesField(value: data, fieldNumber: fieldNumber)
+    }
+
+    public static func visitRepeated<V: Visitor>(value: [BaseType], fieldNumber: Int, with visitor: inout V) throws {
+        for uuid in value {
+            let data = withUnsafeBytes(of: uuid.uuid) { Data($0) }
+            try visitor.visitSingularBytesField(value: data, fieldNumber: fieldNumber)
+        }
+    }
+
+    public static func visitPacked<V: Visitor>(value: [BaseType], fieldNumber: Int, with visitor: inout V) throws {
+        // UUIDs are not packable (like bytes)
+        try visitRepeated(value: value, fieldNumber: fieldNumber, with: &visitor)
+    }
+}
