@@ -18,6 +18,7 @@ message GeneratedSwiftReservedEnums {
   enum AnyMessageStorage { NONE_AnyMessageStorage = 0; }
   enum AnyUnpackError { NONE_AnyUnpackError = 0; }
   enum append { NONE_append = 0; }
+  enum appendCurrent { NONE_appendCurrent = 0; }
   enum appended { NONE_appended = 0; }
   enum appendUIntHex { NONE_appendUIntHex = 0; }
   enum appendUnknown { NONE_appendUnknown = 0; }
@@ -27,7 +28,6 @@ message GeneratedSwiftReservedEnums {
   enum arrayLiteral { NONE_arrayLiteral = 0; }
   enum arraySeparator { NONE_arraySeparator = 0; }
   enum as { NONE_as = 0; }
-  enum asciiOpenCurlyBracket { NONE_asciiOpenCurlyBracket = 0; }
   enum asciiZero { NONE_asciiZero = 0; }
   enum async { NONE_async = 0; }
   enum AsyncIterator { NONE_AsyncIterator = 0; }
@@ -183,7 +183,9 @@ message GeneratedSwiftReservedEnums {
   enum codePoint { NONE_codePoint = 0; }
   enum codeUnits { NONE_codeUnits = 0; }
   enum Collection { NONE_Collection = 0; }
+  enum collector { NONE_collector = 0; }
   enum comma { NONE_comma = 0; }
+  enum complexName { NONE_complexName = 0; }
   enum consumedBytes { NONE_consumedBytes = 0; }
   enum contains { NONE_contains = 0; }
   enum contentsOf { NONE_contentsOf = 0; }
@@ -568,6 +570,7 @@ message GeneratedSwiftReservedEnums {
   enum isPathValid { NONE_isPathValid = 0; }
   enum isReserved { NONE_isReserved = 0; }
   enum isValid { NONE_isValid = 0; }
+  enum isValidHexDigit { NONE_isValidHexDigit = 0; }
   enum itemTagsEncodedSize { NONE_itemTagsEncodedSize = 0; }
   enum iterator { NONE_iterator = 0; }
   enum javaGenerateEqualsAndHash { NONE_javaGenerateEqualsAndHash = 0; }
@@ -821,6 +824,7 @@ message GeneratedSwiftReservedEnums {
   enum rubyPackage { NONE_rubyPackage = 0; }
   enum s { NONE_s = 0; }
   enum sawBackslash { NONE_sawBackslash = 0; }
+  enum sawPercentEncoding { NONE_sawPercentEncoding = 0; }
   enum sawSection4Characters { NONE_sawSection4Characters = 0; }
   enum sawSection5Characters { NONE_sawSection5Characters = 0; }
   enum Scalar { NONE_Scalar = 0; }

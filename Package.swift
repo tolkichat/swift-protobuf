@@ -83,7 +83,8 @@ let package = Package(
             swiftSettings: .packageSettings
         ),
     ],
-    swiftLanguageVersions: [.v5]
+    swiftLanguageModes: [.v6],
+    cxxLanguageStandard: .gnucxx17
 )
 
 // Settings for every Swift target in this package, like project-level settings
@@ -91,8 +92,7 @@ let package = Package(
 extension Array where Element == PackageDescription.SwiftSetting {
     static var packageSettings: Self {
         [
-            .enableExperimentalFeature("StrictConcurrency=complete"),
-            .enableUpcomingFeature("ExistentialAny"),
+            .enableUpcomingFeature("ExistentialAny")
         ]
     }
 }

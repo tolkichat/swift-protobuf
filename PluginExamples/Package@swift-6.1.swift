@@ -1,4 +1,4 @@
-// swift-tools-version: 5.10
+// swift-tools-version: 6.1
 
 import PackageDescription
 
@@ -47,6 +47,15 @@ let package = Package(
                 .plugin(name: "SwiftProtobufPlugin", package: "swift-protobuf")
             ]
         ),
+        .target(
+            name: "CustomProtoPath",
+            dependencies: [
+                .product(name: "SwiftProtobuf", package: "swift-protobuf")
+            ],
+            plugins: [
+                .plugin(name: "SwiftProtobufPlugin", package: "swift-protobuf")
+            ]
+        ),
         .testTarget(
             name: "ExampleTests",
             dependencies: [
@@ -54,7 +63,9 @@ let package = Package(
                 .target(name: "Nested"),
                 .target(name: "Import"),
                 .target(name: "AccessLevelOnImport"),
+                .target(name: "CustomProtoPath"),
             ]
         ),
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )
