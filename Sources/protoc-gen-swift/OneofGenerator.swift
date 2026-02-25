@@ -28,6 +28,8 @@ class OneofGenerator {
         let swiftType: String
         let swiftDefaultValue: String
         let protoGenericType: String
+        let traitsType: String
+        let isUUID: Bool
         let comments: String
 
         var isGroupOrMessage: Bool {
@@ -59,6 +61,8 @@ class OneofGenerator {
             swiftType = descriptor.swiftType(namer: namer)
             swiftDefaultValue = descriptor.swiftDefaultValue(namer: namer)
             protoGenericType = descriptor.protoGenericType
+            traitsType = descriptor.traitsType(namer: namer)
+            isUUID = descriptor.hasUuidOption
             comments = descriptor.protoSourceCommentsWithDeprecation(generatorOptions: generatorOptions)
 
             super.init(descriptor: descriptor)
@@ -369,10 +373,12 @@ class OneofGenerator {
                 hadValueTest = "\(storedProperty) != nil"
             }
 
-            p.print(
-                "try decoder.decodeSingular\(field.protoGenericType)Field(value: &v)",
-                "if let v = v {"
-            )
+            if field.isUUID {
+                p.print("try \(field.traitsType).decodeSingular(value: &v, from: &decoder)")
+            } else {
+                p.print("try decoder.decodeSingular\(field.protoGenericType)Field(value: &v)")
+            }
+            p.print("if let v = v {")
             p.printIndented(
                 "if \(hadValueTest) {try decoder.handleConflictingOneOf()}",
                 "\(storedProperty) = \(field.dottedSwiftName)(v)"
@@ -391,9 +397,15 @@ class OneofGenerator {
 
         if group.count == 1 {
             p.print("try { if case \(field.dottedSwiftName)(let v)? = \(storedProperty) {")
-            p.printIndented(
-                "try visitor.visitSingular\(field.protoGenericType)Field(value: v, fieldNumber: \(field.number))"
-            )
+            if field.isUUID {
+                p.printIndented(
+                    "try \(field.traitsType).visitSingular(value: v, fieldNumber: \(field.number), with: &visitor)"
+                )
+            } else {
+                p.printIndented(
+                    "try visitor.visitSingular\(field.protoGenericType)Field(value: v, fieldNumber: \(field.number))"
+                )
+            }
             p.print("} }()")
         } else {
             let isOnlyGroup = fieldSortedGrouped.count == 1
@@ -411,10 +423,17 @@ class OneofGenerator {
                     p.print("switch \(storedProperty) {")
                 }
                 p.print("case \(f.dottedSwiftName)?: try {")
-                p.printIndented(
-                    "guard case \(f.dottedSwiftName)(let v)? = \(storedProperty) else { preconditionFailure() }",
-                    "try visitor.visitSingular\(f.protoGenericType)Field(value: v, fieldNumber: \(f.number))"
-                )
+                if f.isUUID {
+                    p.printIndented(
+                        "guard case \(f.dottedSwiftName)(let v)? = \(storedProperty) else { preconditionFailure() }",
+                        "try \(f.traitsType).visitSingular(value: v, fieldNumber: \(f.number), with: &visitor)"
+                    )
+                } else {
+                    p.printIndented(
+                        "guard case \(f.dottedSwiftName)(let v)? = \(storedProperty) else { preconditionFailure() }",
+                        "try visitor.visitSingular\(f.protoGenericType)Field(value: v, fieldNumber: \(f.number))"
+                    )
+                }
                 p.print("}()")
             }
             if isOnlyGroup && group.count <= maxCasesInSwitch {

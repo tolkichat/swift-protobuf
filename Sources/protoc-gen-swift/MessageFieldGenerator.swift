@@ -35,6 +35,7 @@ class MessageFieldGenerator: FieldGeneratorBase, FieldGenerator {
 
     private var isMap: Bool { fieldDescriptor.isMap }
     private var isPacked: Bool { fieldDescriptor.isPacked }
+    private var isUUID: Bool { fieldDescriptor.hasUuidOption }
 
     // Note: this could still be a map (since those are repeated message fields
     private var isRepeated: Bool { fieldDescriptor.isRepeated }
@@ -172,6 +173,18 @@ class MessageFieldGenerator: FieldGeneratorBase, FieldGenerator {
     }
 
     func generateDecodeFieldCase(printer p: inout CodePrinter) {
+        if isUUID {
+            if isRepeated {
+                p.print("case \(number): try { try \(traitsType).decodeRepeated(value: &\(storedProperty), from: &decoder) }()")
+            } else if hasFieldPresence {
+                // Optional UUID: storage is UUID?, matches decodeSingular signature directly
+                p.print("case \(number): try { try \(traitsType).decodeSingular(value: &\(storedProperty), from: &decoder) }()")
+            } else {
+                // Non-optional UUID: storage is UUID, need temporary optional for decodeSingular
+                p.print("case \(number): try { var v: UUID? = \(storedProperty); try \(traitsType).decodeSingular(value: &v, from: &decoder); if let v = v { \(storedProperty) = v } }()")
+            }
+            return
+        }
         let decoderMethod: String
         let traitsArg: String
         if isMap {
@@ -191,6 +204,29 @@ class MessageFieldGenerator: FieldGeneratorBase, FieldGenerator {
     }
 
     func generateTraverse(printer p: inout CodePrinter) {
+        // UUID fields use traits-based visit: ProtobufUUID.visitSingular/visitRepeated/visitPacked
+        if isUUID {
+            let varName = hasFieldPresence ? "v" : storedProperty
+            var usesLocals = false
+            let conditional: String
+            if isRepeated {
+                conditional = "!\(varName).isEmpty"
+            } else if hasFieldPresence {
+                conditional = "let v = \(storedProperty)"
+                usesLocals = true
+            } else {
+                conditional = "\(varName) != \(swiftDefaultValue)"
+            }
+            let modifier = isPacked ? "Packed" : isRepeated ? "Repeated" : "Singular"
+            let prefix = usesLocals ? "try { " : ""
+            let suffix = usesLocals ? " }()" : ""
+
+            p.print("\(prefix)if \(conditional) {")
+            p.printIndented("try \(traitsType).visit\(modifier)(value: \(varName), fieldNumber: \(number), with: &visitor)")
+            p.print("}\(suffix)")
+            return
+        }
+
         let visitMethod: String
         let traitsArg: String
         if isMap {
